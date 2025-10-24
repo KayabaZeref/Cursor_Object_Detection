@@ -16,7 +16,7 @@
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow/tfjs": "^4.11.0",
     "@tensorflow/tfjs-react-native": "^0.8.0",
-    "expo": "~54.0.18",
+    "expo": "54.0.20",
     "expo-camera": "^17.0.8",
     "expo-dev-client": "~6.0.16",
     "expo-file-system": "^19.0.17",

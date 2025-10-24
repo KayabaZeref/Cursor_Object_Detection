@@ -186,6 +186,18 @@ expo run:ios
 
 This project is for educational and demonstration purposes.
 
+## 📚 Documentation
+
+For detailed documentation, see the `/documents` folder:
+
+- **[QUICKSTART.md](documents/QUICKSTART.md)** - Quick 3-step guide
+- **[PROJECT_SUMMARY.md](documents/PROJECT_SUMMARY.md)** - Project overview
+- **[IMPLEMENTATION_GUIDE.md](documents/IMPLEMENTATION_GUIDE.md)** - AI implementation details
+- **[CODE_WORKFLOW.md](documents/CODE_WORKFLOW.md)** - Code execution workflow
+- **[COCO-SSD-OBJECTS.md](documents/COCO-SSD-OBJECTS.md)** - List of 80 detectable objects
+- **[I18N-MULTILANGUAGE.md](documents/I18N-MULTILANGUAGE.md)** - Multi-language support guide
+- **[CLEANUP_SUMMARY.md](documents/CLEANUP_SUMMARY.md)** - Project cleanup report
+
 ## Support
 
 For issues related to:

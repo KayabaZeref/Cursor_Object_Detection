@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, PermissionsAndroid, Modal, TextInput, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Voice from '@react-native-voice/voice';
@@ -22,22 +22,41 @@ export default function VoiceSearchScreen({ navigation }: VoiceSearchScreenProps
     const [recognizedText, setRecognizedText] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [showTextInput, setShowTextInput] = useState(false);
+    const [textInput, setTextInput] = useState('');
 
     useEffect(() => {
         // Initialize TTS
         Tts.setDefaultLanguage(i18n.language === 'vi' ? 'vi-VN' : 'en-US');
 
-        // Voice recognition event listeners
-        Voice.onSpeechStart = onSpeechStart;
-        Voice.onSpeechEnd = onSpeechEnd;
-        Voice.onSpeechResults = onSpeechResults;
-        Voice.onSpeechError = onSpeechError;
+        // Initialize Voice recognition
+        const initVoice = async () => {
+            try {
+                // Check if Voice is available by checking its methods
+                if (Voice && typeof Voice.isAvailable === 'function') {
+                    const available = await Voice.isAvailable();
+                    console.log('Voice recognition available:', available);
+                }
 
-        // Request microphone permission on Android
-        requestMicrophonePermission();
+                // Set up Voice recognition event listeners
+                Voice.onSpeechStart = onSpeechStart;
+                Voice.onSpeechEnd = onSpeechEnd;
+                Voice.onSpeechResults = onSpeechResults;
+                Voice.onSpeechError = onSpeechError;
+
+                // Request microphone permission on Android
+                await requestMicrophonePermission();
+            } catch (err) {
+                console.log('Error initializing voice:', err);
+            }
+        };
+
+        initVoice();
 
         return () => {
-            Voice.destroy().then(Voice.removeAllListeners);
+            Voice.destroy().then(Voice.removeAllListeners).catch(err => {
+                console.log('Error cleaning up Voice:', err);
+            });
         };
     }, []);
 
@@ -97,10 +116,17 @@ export default function VoiceSearchScreen({ navigation }: VoiceSearchScreenProps
     const startVoiceRecognition = async () => {
         try {
             setRecognizedText('');
-            await Voice.start(i18n.language === 'vi' ? 'vi-VN' : 'en-US');
-        } catch (error) {
+            const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+            console.log('Starting voice recognition with locale:', locale);
+            await Voice.start(locale);
+        } catch (error: any) {
             console.error('Failed to start voice recognition:', error);
-            Alert.alert('Error', 'Failed to start voice recognition. Please try again.');
+            const errorMessage = error?.message || 'Unknown error';
+            Alert.alert(
+                'Voice Recognition Error',
+                `Unable to start voice recognition: ${errorMessage}\n\nYou can still type your search manually.`,
+                [{ text: 'OK' }]
+            );
         }
     };
 
@@ -110,6 +136,7 @@ export default function VoiceSearchScreen({ navigation }: VoiceSearchScreenProps
             setIsListening(false);
         } catch (error) {
             console.error('Failed to stop voice recognition:', error);
+            setIsListening(false);
         }
     };
 
@@ -190,7 +217,11 @@ export default function VoiceSearchScreen({ navigation }: VoiceSearchScreenProps
             </View>
 
             {/* Content */}
-            <View style={styles.content}>
+            <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
                 <Text style={styles.emoji}>🎤</Text>
                 <Text style={styles.title}>{t('voiceSearch.title')}</Text>
                 <Text style={styles.subtitle}>{t('voiceSearch.subtitle')}</Text>
@@ -208,16 +239,30 @@ export default function VoiceSearchScreen({ navigation }: VoiceSearchScreenProps
                         <Text style={styles.loadingText}>{t('voiceSearch.searching')}</Text>
                     </View>
                 ) : (
-                    <TouchableOpacity
-                        style={[styles.micButton, isListening && styles.micButtonListening]}
-                        onPress={isListening ? stopVoiceRecognition : startVoiceRecognition}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.micEmoji}>🎙️</Text>
-                        <Text style={styles.micButtonText}>
-                            {isListening ? t('voiceSearch.listening') || 'Listening...' : t('voiceSearch.tapToSpeak')}
-                        </Text>
-                    </TouchableOpacity>
+                    <View>
+                        <TouchableOpacity
+                            style={[styles.micButton, isListening && styles.micButtonListening]}
+                            onPress={isListening ? stopVoiceRecognition : startVoiceRecognition}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.micEmoji}>🎙️</Text>
+                            <Text style={styles.micButtonText}>
+                                {isListening ? t('voiceSearch.listening') || 'Listening...' : t('voiceSearch.tapToSpeak')}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.orText}>{t('common.or') || 'or'}</Text>
+
+                        <TouchableOpacity
+                            style={styles.textInputButton}
+                            onPress={() => {
+                                setTextInput('');
+                                setShowTextInput(true);
+                            }}
+                        >
+                            <Text style={styles.textInputButtonText}>⌨️ {t('common.typeSearch') || 'Type Search'}</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 <View style={styles.examplesContainer}>
@@ -226,7 +271,71 @@ export default function VoiceSearchScreen({ navigation }: VoiceSearchScreenProps
                     <Text style={styles.exampleText}>• "{t('voiceSearch.example2')}"</Text>
                     <Text style={styles.exampleText}>• "{t('voiceSearch.example3')}"</Text>
                 </View>
-            </View>
+            </ScrollView>
+
+            {/* Text Input Modal */}
+            <Modal
+                visible={showTextInput}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowTextInput(false)}
+            >
+                <KeyboardAvoidingView
+                    style={styles.modalOverlay}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowTextInput(false)}
+                    >
+                        <TouchableOpacity activeOpacity={1} onPress={() => { }}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>{t('voiceSearch.title')}</Text>
+                                <Text style={styles.modalSubtitle}>
+                                    {t('voiceSearch.speakPrompt') || 'What are you looking for?'}
+                                </Text>
+
+                                <TextInput
+                                    style={styles.textInputField}
+                                    placeholder={t('common.typeSearch') || 'Type here...'}
+                                    placeholderTextColor="#999"
+                                    value={textInput}
+                                    onChangeText={setTextInput}
+                                    autoFocus={true}
+                                    onSubmitEditing={() => {
+                                        if (textInput.trim()) {
+                                            handleVoiceInput(textInput.trim());
+                                            setShowTextInput(false);
+                                        }
+                                    }}
+                                />
+
+                                <View style={styles.modalButtons}>
+                                    <TouchableOpacity
+                                        style={[styles.modalButton, styles.cancelButton]}
+                                        onPress={() => setShowTextInput(false)}
+                                    >
+                                        <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.modalButton, styles.searchButton]}
+                                        onPress={() => {
+                                            if (textInput.trim()) {
+                                                handleVoiceInput(textInput.trim());
+                                                setShowTextInput(false);
+                                            }
+                                        }}
+                                    >
+                                        <Text style={styles.searchButtonText}>{t('common.search')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
@@ -270,8 +379,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
     },
-    content: {
+    scrollView: {
         flex: 1,
+    },
+    scrollContent: {
         alignItems: 'center',
         paddingHorizontal: 30,
         paddingTop: 40,
@@ -365,6 +476,96 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginBottom: 10,
         paddingLeft: 10,
+    },
+    orText: {
+        color: 'rgba(255, 255, 255, 0.5)',
+        fontSize: 16,
+        textAlign: 'center',
+        marginVertical: 20,
+    },
+    textInputButton: {
+        backgroundColor: 'rgba(74, 144, 226, 0.2)',
+        paddingVertical: 16,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#4a90e2',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    textInputButtonText: {
+        color: '#4a90e2',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#2c3e50',
+        borderRadius: 20,
+        padding: 24,
+        width: '85%',
+        maxWidth: 400,
+        borderWidth: 2,
+        borderColor: '#4a90e2',
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+        textAlign: 'center',
+        marginBottom: 8,
+    },
+    modalSubtitle: {
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.7)',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    textInputField: {
+        backgroundColor: '#34495e',
+        borderRadius: 12,
+        padding: 16,
+        fontSize: 16,
+        color: '#fff',
+        borderWidth: 2,
+        borderColor: '#4a90e2',
+        marginBottom: 20,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#34495e',
+        borderWidth: 2,
+        borderColor: '#95a5a6',
+    },
+    cancelButtonText: {
+        color: '#95a5a6',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    searchButton: {
+        backgroundColor: '#4a90e2',
+        borderWidth: 2,
+        borderColor: '#4a90e2',
+    },
+    searchButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

@@ -141,7 +141,9 @@
         "delete": "Xóa",
         "search": "Tìm Kiếm",
         "success": "Thành Công",
-        "error": "Lỗi"
+        "error": "Lỗi",
+        "or": "hoặc",
+        "typeSearch": "Nhập Tìm Kiếm"
     },
     "objects": {
         "person": "Người",

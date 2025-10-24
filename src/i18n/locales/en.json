@@ -141,7 +141,9 @@
         "delete": "Delete",
         "search": "Search",
         "success": "Success",
-        "error": "Error"
+        "error": "Error",
+        "or": "or",
+        "typeSearch": "Type Search"
     },
     "objects": {
         "person": "Person",

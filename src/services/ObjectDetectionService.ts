@@ -4,7 +4,6 @@ import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as atob } from 'base-64';
 import * as jpeg from 'jpeg-js';
-import { Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import i18n from '../i18n/config';
 
