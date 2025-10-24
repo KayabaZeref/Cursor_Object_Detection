@@ -1,30 +1,46 @@
 {
   "expo": {
-    "name": "Cursor_Object_Detection_Expo",
-    "slug": "Cursor_Object_Detection_Expo",
+    "name": "Object Detection Expo",
+    "slug": "object-detection-expo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.objectdetectionexpo",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app requires camera access to detect objects.",
+        "NSMicrophoneUsageDescription": "This app requires microphone access for voice search.",
+        "NSSpeechRecognitionUsageDescription": "This app requires speech recognition for voice search."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.objectdetectionexpo",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to detect objects."
+        }
+      ]
+    ]
   }
 }
